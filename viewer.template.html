@@ -1,0 +1,456 @@
+<title>Navigo Vehicle Models</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+  /* Layout: a 3D stage with a road-sign spec sheet beside it (below it on phones). */
+  :root {
+    --bg: #F3F2EE; --panel: #FFFFFF; --ink: #1B1D21; --muted: #5E6168; --line: #DEDCD6;
+    --accent: #E35F00; --chip: #EFEDE7; --stage: #DDE3E8;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121417; --panel: #1A1D21; --ink: #ECEDEF; --muted: #9EA3AB; --line: #2C3036;
+      --accent: #FF8A3D; --chip: #23272D; --stage: #0E1013; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121417; --panel: #1A1D21; --ink: #ECEDEF; --muted: #9EA3AB; --line: #2C3036;
+    --accent: #FF8A3D; --chip: #23272D; --stage: #0E1013; color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; height: auto; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100%; }
+  .stage { position: relative; min-width: 0; background: var(--stage); }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .badge {
+    position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 16px;
+    background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line);
+    padding: 6px 10px; border-radius: 6px; font-family: var(--display); font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; font-size: 13px; backdrop-filter: blur(6px);
+  }
+  .badge b { color: var(--accent); }
+  .panel {
+    background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto;
+    padding-block: 20px 28px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 20px; min-width: 0;
+  }
+  h1 { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1.05; margin: 0; text-wrap: balance; }
+  .kicker { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--accent); margin: 0 0 6px; }
+  .lede { margin: 8px 0 0; color: var(--muted); max-width: 60ch; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .label { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: 12px; color: var(--muted); }
+  .models { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .model {
+    display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--chip); color: var(--ink); cursor: pointer; text-align: left; font: 500 13px var(--body);
+  }
+  .model img { aspect-ratio: 3 / 2; object-fit: cover; border-radius: 5px; width: 100%; background: var(--stage); }
+  .model[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: 500 14px var(--body); color: var(--ink); background: var(--chip); border: 1px solid var(--line); padding: 7px 12px; border-radius: 6px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--panel); cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+  .specs { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; font-variant-numeric: tabular-nums; }
+  .specs dt { color: var(--muted); }
+  .specs dd { margin: 0; font-weight: 500; }
+  .details { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+  .details li::marker { color: var(--accent); }
+  .render img { border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .render figcaption, .note { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh auto; height: auto; }
+    html, body { height: auto; }
+    .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="badge" id="badge"><b>Live</b> · the app's .glb files, real-time</div>
+  </div>
+  <aside class="panel">
+    <header>
+      <p class="kicker" id="kicker">Navigo · navigation models</p>
+      <h1 id="title">Matatu</h1>
+      <p class="lede" id="lede"></p>
+    </header>
+    <div class="group">
+      <span class="label" id="models-label">Model</span>
+      <div class="models" id="models" role="group" aria-labelledby="models-label"></div>
+    </div>
+    <div class="group">
+      <span class="label" id="view-label">View</span>
+      <div class="seg" role="group" aria-labelledby="view-label">
+        <button type="button" id="view-showroom" data-view="showroom" aria-pressed="true">Showroom</button>
+        <button type="button" id="view-chase" data-view="chase" aria-pressed="false">Navigation camera</button>
+        <button type="button" id="view-top" data-view="top" aria-pressed="false">From above</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label" id="light-label">Light (the map's presets)</span>
+      <div class="seg" role="group" aria-labelledby="light-label">
+        <button type="button" id="light-day" data-light="day" aria-pressed="true">Day</button>
+        <button type="button" id="light-dusk" data-light="dusk" aria-pressed="false">Dusk</button>
+        <button type="button" id="light-night" data-light="night" aria-pressed="false">Night</button>
+      </div>
+    </div>
+    <div class="group" id="colour-group">
+      <span class="label" id="colour-label">Colour</span>
+      <div class="swatches" role="group" aria-labelledby="colour-label" id="swatches"></div>
+      <p class="note" id="colour-note"></p>
+    </div>
+    <div class="group">
+      <span class="label">Specification</span>
+      <dl class="specs" id="specs"></dl>
+    </div>
+    <div class="group">
+      <span class="label">Details</span>
+      <ul class="details" id="details"></ul>
+    </div>
+    <figure class="render" style="margin:0">
+      <img id="hero" alt="" width="560">
+      <figcaption>Studio render (Blender Cycles) of the same model.</figcaption>
+    </figure>
+  </aside>
+</div>
+
+<script id="catalog" type="application/json">__CATALOG__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  const CATALOG = JSON.parse(document.getElementById("catalog").textContent);
+  const stage = document.getElementById("stage");
+  const badge = document.getElementById("badge");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const state = { item: CATALOG.items[0].id, view: "showroom", light: "day", colours: {} };
+  try { Object.assign(state, JSON.parse(localStorage.getItem("navigo-models-viewer") || "{}")); } catch (e) {}
+  if (!CATALOG.items.some(function (i) { return i.id === state.item; })) state.item = CATALOG.items[0].id;
+  function save() { try { localStorage.setItem("navigo-models-viewer", JSON.stringify(state)); } catch (e) {} }
+
+  if (!window.THREE || !THREE.GLTFLoader) { badge.textContent = "Couldn't load the 3D library. The studio renders below show each model."; return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { badge.textContent = "This browser can't show 3D (WebGL is off)."; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.prepend(renderer.domElement);
+  function srgb(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 2000);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.49;
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.bias = -0.0004;
+  scene.add(sun, sun.target);
+
+  // Sky reflections for glossy paint and glass: a gradient sphere rendered to an env map.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  function envFor(top, bottom) {
+    const s = new THREE.Scene();
+    const geo = new THREE.SphereGeometry(10, 32, 16);
+    const cols = [];
+    const c1 = new THREE.Color(top), c2 = new THREE.Color(bottom);
+    for (let i = 0; i < geo.attributes.position.count; i++) {
+      const y = geo.attributes.position.getY(i) / 10;
+      const c = c2.clone().lerp(c1, Math.max(0, Math.min(1, (y + 0.2) / 1.0)));
+      cols.push(c.r, c.g, c.b);
+    }
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+    s.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+    return pmrem.fromScene(s, 0.04).texture;
+  }
+
+  // ── The world: ground, a looping road, the route ribbon, blocks, water ──
+  const groundMat = new THREE.MeshStandardMaterial({ color: srgb(0x8f998c), roughness: 1 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), groundMat);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({ color: srgb(0x1d4e6e), roughness: 0.25, metalness: 0.1 }));
+  water.rotation.x = -Math.PI / 2; water.position.y = 0.02; water.receiveShadow = true; scene.add(water);
+  const path = new THREE.CatmullRomCurve3([[-90, 0, 60], [-40, 0, 72], [10, 0, 46], [34, 0, 0], [16, 0, -50], [-34, 0, -70], [-88, 0, -44], [-112, 0, 10]]
+    .map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); }), true, "centripetal");
+  function leftOf(t) { return new THREE.Vector3(t.z, 0, -t.x).normalize(); }
+  function ribbon(curve, width, y, segments) {
+    const pos = [], uv = [], idx = [], len = curve.getLength();
+    for (let i = 0; i <= segments; i++) {
+      const u = i / segments, p = curve.getPointAt(u), side = leftOf(curve.getTangentAt(u)).multiplyScalar(width / 2);
+      pos.push(p.x - side.x, y, p.z - side.z, p.x + side.x, y, p.z + side.z);
+      uv.push(0, u * len / 14, 1, u * len / 14);
+      if (i < segments) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  const roadCanvas = document.createElement("canvas"); roadCanvas.width = 64; roadCanvas.height = 512;
+  (function () {
+    const g = roadCanvas.getContext("2d");
+    g.fillStyle = "#3b3e42"; g.fillRect(0, 0, 64, 512);
+    for (let i = 0; i < 2600; i++) { const v = 50 + Math.random() * 30; g.fillStyle = "rgba(" + v + "," + v + "," + v + ",0.35)"; g.fillRect(Math.random() * 64, Math.random() * 512, 1, 1); }
+    g.fillStyle = "#e9e6dc"; g.fillRect(2, 0, 2, 512); g.fillRect(60, 0, 2, 512);
+    for (let y = 0; y < 512; y += 128) g.fillRect(31, y, 2, 64);
+  })();
+  const roadTex = new THREE.CanvasTexture(roadCanvas); roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping; roadTex.encoding = THREE.sRGBEncoding;
+  const road = new THREE.Mesh(ribbon(path, 7.2, 0.01, 700), new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.95 }));
+  road.receiveShadow = true; scene.add(road);
+  const lanePts = []; for (let i = 0; i < 500; i++) { const u = i / 500; lanePts.push(path.getPointAt(u).add(leftOf(path.getTangentAt(u)).multiplyScalar(1.8))); }
+  const lane = new THREE.CatmullRomCurve3(lanePts, true, "centripetal");
+  const routeMat = new THREE.MeshBasicMaterial({ color: srgb(0x12805C), transparent: true, opacity: 0.8 });
+  const routeLine = new THREE.Mesh(ribbon(lane, 1.2, 0.03, 700), routeMat); scene.add(routeLine);
+  const blocks = new THREE.Group(); scene.add(blocks);
+  const blockMat = new THREE.MeshStandardMaterial({ color: srgb(0xcfcbc2), roughness: 0.9 });
+  const windowMat = new THREE.MeshStandardMaterial({ color: srgb(0x2a3138), roughness: 0.4, emissive: srgb(0xffd9a0), emissiveIntensity: 0 });
+  const rnd = (function (s) { return function () { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })(7);
+  for (let i = 0; i < 80; i++) {
+    const u = rnd(), p = path.getPointAt(u), t = path.getTangentAt(u), n = leftOf(t);
+    const side = rnd() < 0.5 ? -1 : 1, off = 9.6 + rnd() * 16, w = 6 + rnd() * 10, d = 6 + rnd() * 10, h = 4 + rnd() * 20;
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [blockMat, blockMat, blockMat, blockMat, windowMat, windowMat]);
+    b.position.set(p.x + n.x * off * side, h / 2, p.z + n.z * off * side); b.rotation.y = Math.atan2(t.x, t.z);
+    b.castShadow = b.receiveShadow = true; blocks.add(b);
+  }
+  const PAD = new THREE.Vector3(-40, 0, 0);
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(1, 64), new THREE.MeshStandardMaterial({ color: srgb(0xb9bcb6), roughness: 0.8 }));
+  pad.rotation.x = -Math.PI / 2; pad.position.copy(PAD).setY(0.012); pad.receiveShadow = true; scene.add(pad);
+
+  // ── Models: fetched beside the page, parsed once, cloned per car ──
+  const loader = new THREE.GLTFLoader();
+  const cache = {};
+  function load(file) {
+    if (!cache[file]) {
+      // Models are published as base64 text (artifacts serve text, not .glb).
+      cache[file] = fetch(file).then(function (r) { if (!r.ok) throw new Error(file + ": " + r.status); return r.text(); })
+        .then(function (b64) { const bin = atob(b64.trim()); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out.buffer; })
+        .then(function (buf) { return new Promise(function (res, rej) { loader.parse(buf, "", res, rej); }); });
+    }
+    return cache[file];
+  }
+  const holder = new THREE.Group(); scene.add(holder);
+  let cars = [], wheels = [], materials = [], item = null, loadToken = 0;
+
+  function prepare(root) {
+    root.traverse(function (o) {
+      if (o.isMesh) {
+        o.castShadow = true; o.receiveShadow = true;
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { if (materials.indexOf(m) < 0) materials.push(m); });
+      }
+      if (/^wheel/.test(o.name)) {
+        // Right-side wheels are the left one turned round: their axle points the other way.
+        o.userData.spin = new THREE.Vector3(1, 0, 0).applyQuaternion(o.quaternion).x >= 0 ? 1 : -1;
+        wheels.push(o);
+      }
+    });
+  }
+
+  function select(id) {
+    item = CATALOG.items.find(function (i) { return i.id === id; });
+    state.item = id; save();
+    document.querySelectorAll(".model").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.id === id)); });
+    document.getElementById("title").textContent = item.title;
+    document.getElementById("kicker").textContent = "Navigo · " + item.group;
+    document.getElementById("lede").textContent = item.lede;
+    document.getElementById("hero").src = item.hero;
+    document.querySelector(".render").hidden = !item.hero;
+    document.getElementById("hero").alt = "Studio render: " + item.title;
+    const specs = document.getElementById("specs");
+    specs.innerHTML = "";
+    item.specs.forEach(function (row) {
+      const dt = document.createElement("dt"); dt.textContent = row[0];
+      const dd = document.createElement("dd"); dd.textContent = row[1];
+      specs.append(dt, dd);
+    });
+    const details = document.getElementById("details");
+    details.innerHTML = "";
+    item.details.forEach(function (d) { const li = document.createElement("li"); li.textContent = d; details.append(li); });
+    buildSwatches();
+    const token = ++loadToken;
+    badge.innerHTML = "<b>Loading</b> · " + item.title;
+    Promise.all(item.cars.map(function (c) { return load(c.file); })).then(function (gltfs) {
+      if (token !== loadToken) return;
+      holder.clear(); cars = []; wheels = []; materials = [];
+      item.cars.forEach(function (c, i) {
+        const g = new THREE.Group();
+        const model = gltfs[i].scene.clone(true);
+        if (c.flip) model.rotation.y = Math.PI;
+        g.add(model); holder.add(g);
+        prepare(model);
+        cars.push({ group: g, length: c.length });
+      });
+      materials.forEach(function (m) { m.envMapIntensity = 1; });
+      applyColour(); applyLight();
+      setView(state.view);
+      badge.innerHTML = "<b>Live</b> · " + item.files + ", real-time";
+    }).catch(function (e) { badge.textContent = "Couldn't load " + item.title + ": " + e.message; });
+  }
+
+  // ── Colour (route livery or paint) ──
+  function buildSwatches() {
+    const box = document.getElementById("swatches");
+    box.innerHTML = "";
+    const group = document.getElementById("colour-group");
+    group.hidden = !item.colour;
+    if (!item.colour) return;
+    document.getElementById("colour-note").textContent = item.colour.note;
+    const current = state.colours[item.id] || item.colour.options[0][0];
+    item.colour.options.forEach(function (o, i) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "swatch"; b.id = "swatch-" + item.id + "-" + i; b.style.background = o[0];
+      b.setAttribute("aria-label", o[1]); b.setAttribute("aria-pressed", String(o[0] === current));
+      b.addEventListener("click", function () { state.colours[item.id] = o[0]; save(); applyColour(); buildSwatches(); });
+      box.append(b);
+    });
+  }
+  function applyColour() {
+    if (!item || !item.colour) { routeMat.color.copy(srgb(0x12805C)); return; }
+    const hex = state.colours[item.id] || item.colour.options[0][0];
+    materials.forEach(function (m) { if (m.name === item.colour.material) m.color.copy(srgb(hex)); });
+    routeMat.color.copy(srgb(item.colour.material === "livery" ? hex : 0xE35F00));
+  }
+
+  // ── Light ──
+  const LIGHTS = {
+    day:   { sky: 0xbfd6ea, fog: 0xbfd6ea, env: [0xcfe3f5, 0x6d7a68], envI: 1.0, hemi: [0xffffff, 0x6f7a6c, 0.6], sun: [0xfff6ea, 1.5], sunPos: [60, 90, 40], emit: 0.15, windows: 0, ground: 0x8f998c },
+    dusk:  { sky: 0xe7a77a, fog: 0xd99b74, env: [0xf2b48a, 0x40303a], envI: 0.7, hemi: [0xffd2b0, 0x3f3644, 0.42], sun: [0xffb070, 1.0], sunPos: [-80, 25, 60], emit: 0.8, windows: 0.35, ground: 0x6f6c60 },
+    night: { sky: 0x0d1626, fog: 0x0d1626, env: [0x1a2a48, 0x07090d], envI: 0.25, hemi: [0x6f86b8, 0x101418, 0.22], sun: [0x9fb4e0, 0.22], sunPos: [-40, 80, -60], emit: 2.2, windows: 0.9, ground: 0x262b30 }
+  };
+  const envs = {};
+  function applyLight() {
+    const L = LIGHTS[state.light];
+    scene.background = new THREE.Color(L.sky);
+    scene.fog = new THREE.Fog(srgb(L.fog), 120, 700);
+    envs[state.light] = envs[state.light] || envFor(L.env[0], L.env[1]);
+    scene.environment = envs[state.light];
+    hemi.color.copy(srgb(L.hemi[0])); hemi.groundColor.copy(srgb(L.hemi[1])); hemi.intensity = L.hemi[2];
+    sun.color.copy(srgb(L.sun[0])); sun.intensity = L.sun[1];
+    sun.userData.offset = new THREE.Vector3(L.sunPos[0], L.sunPos[1], L.sunPos[2]);
+    groundMat.color.copy(srgb(L.ground));
+    windowMat.emissiveIntensity = L.windows;
+    materials.forEach(function (m) {
+      m.envMapIntensity = L.envI;
+      if (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05) m.emissiveIntensity = /^neon|beacon/.test(m.name) ? L.emit * 1.2 : L.emit;
+    });
+    document.querySelectorAll("[data-light]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.light === state.light)); });
+  }
+
+  // ── Views ──
+  function setView(name) {
+    state.view = name; save();
+    document.querySelectorAll("[data-view]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === name)); });
+    controls.enabled = name === "showroom";
+    controls.autoRotate = name === "showroom" && !reduceMotion;
+    const onWater = item && item.world === "water";
+    water.visible = !!onWater; road.visible = blocks.visible = routeLine.visible = !onWater;
+    if (name === "showroom" && item) {
+      const r = item.size;
+      pad.scale.setScalar(Math.max(4, r * 0.75));
+      controls.minDistance = Math.max(2, r * 0.6); controls.maxDistance = r * 6 + 10;
+      controls.target.copy(PAD).add(new THREE.Vector3(0, item.height * 0.45 + (item.world === "air" ? 0 : 0), 0));
+      camera.position.copy(PAD).add(new THREE.Vector3(r * 1.1 + 1.5, r * 0.5 + 1, r * 1.25 + 2));
+    }
+  }
+  document.querySelectorAll("[data-view]").forEach(function (b) { b.addEventListener("click", function () { setView(b.dataset.view); }); });
+  document.querySelectorAll("[data-light]").forEach(function (b) { b.addEventListener("click", function () { state.light = b.dataset.light; save(); applyLight(); }); });
+
+  // Model picker.
+  const list = document.getElementById("models");
+  CATALOG.items.forEach(function (i) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "model"; b.dataset.id = i.id; b.id = "model-" + i.id;
+    b.setAttribute("aria-pressed", "false");
+    const img = document.createElement("img"); img.src = i.hero; img.alt = ""; img.loading = "lazy";
+    const span = document.createElement("span"); span.textContent = i.short;
+    b.append(img, span);
+    b.addEventListener("click", function () { select(i.id); });
+    list.append(b);
+  });
+
+  // ── Loop ──
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    renderer.setSize(r.width, r.height, false);
+    camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+  const pathLen = path.getLength();
+  let s = 0, last = performance.now();
+  const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), tmp = new THREE.Vector3();
+  function placeAt(group, dist, lift) {
+    const u = (((dist % pathLen) + pathLen) % pathLen) / pathLen;
+    const p = path.getPointAt(u), t = path.getTangentAt(u);
+    const offset = item && item.world === "water" ? 0 : 1.8;
+    group.position.copy(p).addScaledVector(leftOf(t), offset).setY(lift || 0);
+    tmp.copy(group.position).add(t); tmp.y = group.position.y;
+    group.lookAt(tmp);
+    return t;
+  }
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (item && cars.length) {
+      const lift = item.world === "air" ? 60 : 0;
+      if (state.view === "showroom") {
+        let edge = 0;
+        cars.forEach(function (c, i) {
+          c.group.rotation.set(0, 0, 0);
+          c.group.position.copy(PAD).add(new THREE.Vector3(0, item.world === "air" ? item.height * 0.0 : 0, -(edge + c.length / 2) + (cars.length > 1 ? item.consistLength / 2 : 0)));
+          edge += c.length;
+        });
+        controls.update();
+      } else {
+        if (!reduceMotion) s = (s + item.speed * dt) % pathLen;
+        let edge = 0, t0 = null;
+        cars.forEach(function (c, i) {
+          const t = placeAt(c.group, s - edge - c.length / 2, lift);
+          if (i === 0) t0 = t;
+          edge += c.length;
+        });
+        const lead = cars[0].group;
+        const fwd = t0.clone().normalize();
+        const r = item.size;
+        if (state.view === "chase") {
+          camPos.copy(lead.position).addScaledVector(fwd, -(r * 1.6 + 8)).add(new THREE.Vector3(0, r * 0.75 + 5, 0));
+          camLook.copy(lead.position).addScaledVector(fwd, r * 0.8 + 4);
+        } else {
+          camPos.copy(lead.position).addScaledVector(fwd, -(r * 0.3 + 2)).add(new THREE.Vector3(0, r * 2.4 + 18, 0));
+          camLook.copy(lead.position);
+        }
+        camera.position.lerp(camPos, 1 - Math.pow(0.002, dt));
+        camera.lookAt(camLook);
+      }
+      if (state.view !== "showroom" && !reduceMotion) {
+        wheels.forEach(function (w) { w.rotateX(w.userData.spin * (item.speed / (item.wheelR || 0.35)) * dt); });
+      }
+      const focus = state.view === "showroom" ? PAD : cars[0].group.position;
+      sun.position.copy(focus).add(sun.userData.offset || new THREE.Vector3(60, 90, 40));
+      sun.target.position.copy(focus);
+      const span = Math.max(20, (item.consistLength || item.size) * 0.9);
+      const sc = sun.shadow.camera;
+      sc.left = sc.bottom = -span; sc.right = sc.top = span; sc.near = 1; sc.far = 400; sc.updateProjectionMatrix();
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  resize();
+  applyLight();
+  select(state.item);
+  requestAnimationFrame(frame);
+})();
+</script>
